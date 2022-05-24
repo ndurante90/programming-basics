@@ -3,6 +3,7 @@ import { View } from "../app/view";
 import { Ticket } from "../app/model/ticket";
 import { Bet } from "../app/model/bet";
 import { Wheel } from "../app/model/wheel";
+import { Extraction } from "../app/model/extraction";
 
 let lotto, view;
 let updateUI, renderViewSpy, renderErrorsSpy, assignActionToButton;
@@ -38,6 +39,29 @@ describe("lotto tests", () => {
     expect(lotto.tickets).toHaveLength(0);
 
     expect(updateUI).toHaveBeenCalledWith(setTicketsSpy);
+  });
+
+  test("handleErrors should call view.renderErrors with errors parameter", () => {
+    let error = new Error("Custom error!");
+
+    lotto.handleErrors(error);
+
+    expect(renderErrorsSpy).toHaveBeenCalledWith(error);
+  });
+
+  test("createFakeExtraction should execute extraction.generateExtractionsOnWheels() and updatesUI", () => {
+    let spy = jest.spyOn(lotto, "updateUI");
+    let generateExtractionsOnWheel = jest.spyOn(
+      Extraction.prototype,
+      "generateExtractionsOnWheels"
+    );
+
+    lotto.currentStep = 4;
+    lotto.createFakeExtraction();
+
+    expect(lotto.currentStep).toBe(6);
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(generateExtractionsOnWheel).toHaveBeenCalled();
   });
 
   describe("UpdateUI", () => {
@@ -81,14 +105,6 @@ describe("lotto tests", () => {
         mockFunction
       );
     });
-  });
-
-  test("handleErrors should call view.renderErrors with errors parameter", () => {
-    let error = new Error("Custom error!");
-
-    lotto.handleErrors(error);
-
-    expect(renderErrorsSpy).toHaveBeenCalledWith(error);
   });
 
   describe("The setTicketsNumber method", () => {

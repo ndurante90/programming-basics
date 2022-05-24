@@ -7,6 +7,10 @@ export class Bet {
     this.type = type;
   }
 
+  getNumbersToChecked() {
+    return possibleValues.indexOf(this.type) + 1;
+  }
+
   /**
    * Validate bet checking the type
    * @param {any} betType

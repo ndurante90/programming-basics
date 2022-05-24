@@ -6,12 +6,14 @@ export class Ticket {
   bet;
   wheel;
   numbers;
+  winner;
 
   constructor(amount, betType, wheelCity) {
     this.amountOfNumbers = amount;
     this.bet = new Bet(betType);
     this.wheel = new Wheel(wheelCity);
     this.numbers = [];
+    this.winner = false;
   }
 
   /**

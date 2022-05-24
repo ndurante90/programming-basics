@@ -168,7 +168,8 @@ describe("templates", () => {
       testTemplate += fn(tickets[i], i);
     }
 
-    testTemplate += "</div>";
+    testTemplate +=
+      '</div><br><buttonid="action-btn"type="button">Nextstep</button>';
 
     let template = templates.ticketsTemplate(tickets);
 

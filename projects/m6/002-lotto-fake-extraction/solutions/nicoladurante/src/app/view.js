@@ -68,8 +68,17 @@ export class View {
       case 3:
         template = this.templates.generatingTicketTemplate();
         break;
+
       case 4:
         template = this.templates.ticketsTemplate(data);
+        break;
+
+      case 5:
+        template = this.templates.extractionInProgressTemplate();
+        break;
+
+      case 6:
+        template = this.templates.extractionTemplate(data);
         break;
 
       default:

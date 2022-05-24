@@ -1,6 +1,7 @@
 import { View } from "./view.js";
 import { getFieldsValues, getNumbers } from "./utils.js";
 import { Ticket } from "./model/ticket.js";
+import { Extraction } from "./model/extraction.js";
 
 document.addEventListener("DOMContentLoaded", start);
 
@@ -130,8 +131,37 @@ export class Lotto {
 
     this.currentStep++;
 
+    //async
     setTimeout(() => {
       this.updateUI(null, this.tickets, true);
+      this.view.assignActionToButton("action-btn", this.createFakeExtraction);
+    }, 3000);
+  };
+
+  checkWinnerTickets = (extraction) => {
+    this.tickets.forEach((ticket) => {
+      for (let wheelExtraction of extraction.extractionsOnWheels) {
+        if (wheelExtraction.isWinnerTicket(ticket)) {
+          ticket.winner = true;
+          break;
+        }
+      }
+    });
+  };
+
+  /**
+   * Handle extraction phase.
+   *
+   */
+  createFakeExtraction = () => {
+    let extraction = new Extraction();
+    this.currentStep++;
+    this.updateUI(() => extraction.generateExtractionsOnWheels(), null, true);
+    setTimeout(() => {
+      this.checkWinnerTickets(extraction);
+      extraction.winnerTickets = this.tickets.filter((ticket) => ticket.winner);
+      this.currentStep++;
+      this.updateUI(null, extraction);
     }, 3000);
   };
 }

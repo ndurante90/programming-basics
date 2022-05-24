@@ -142,7 +142,62 @@ export class Templates {
     });
 
     template += "</div>";
+    template += `<br>${this.buttonTemplate()}`;
 
     return template;
+  }
+
+  /**
+   * Template for extraction phase
+   * @returns {string} - template for lotto extraction phase
+   */
+  extractionInProgressTemplate() {
+    return "<div>Processing lotto extraction....</div>";
+  }
+
+  extractionTemplate(data) {
+    let extractionsOnWheels = data.extractionsOnWheels;
+    let winnerTickets = data.winnerTickets;
+    let content = "";
+    let ticketsHtml = "";
+
+    winnerTickets.forEach((ticket, index) => {
+      ticketsHtml += `
+        <div style="margin-right: 10px; border: 4px solid black; border-style: dashed">
+           <div class='header' style='padding-top: 10px;padding-bottom: 10px;border-bottom: 2px solid black; border-bottom-style: dashed'>
+              ${printSpaces(32)} Ticket-${index + 1} ${printSpaces(32)}
+           </div>
+           <div class='body' style='padding: 10px;'>
+              &nbsp;<strong>Numbers:</strong> ${ticket.numbers.join(" ")}
+              <br>
+              &nbsp;<strong>Wheel:</strong> ${ticket.wheel.city}
+              <br>
+              &nbsp;<strong>Bet: </strong> ${ticket.bet.type}
+           </div>
+      </div>`;
+    });
+
+    extractionsOnWheels.forEach((extraction) => {
+      let numbers = extraction.numbers.join(" ");
+      content += `<div class="extraction">
+          ${extraction.wheel.toUpperCase()}&nbsp;&nbsp;&nbsp;&nbsp;${numbers}
+        </div>`;
+    });
+
+    return `<div class="lotto-extraction-phase">
+               <div class="extraction-date">
+                  Estrazione del ${data.extractionDate}
+               </div>
+               <br>
+               <div class="extractionsOnWheels">
+                  ${content}
+               </div>
+            </div>
+            <br>
+            Ticket vincenti:
+            <div class="winnerTickets" style="display: flex">
+               ${ticketsHtml}
+            </div>
+          `;
   }
 }

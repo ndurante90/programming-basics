@@ -101,6 +101,33 @@ describe("View class", () => {
     expect(template).toBe(step4Template);
   });
 
+  test("getTemplate should return the result of extractionInProgressTemplate invocation, if step equals to 5", () => {
+    const step = 5;
+    const step5Template = "<div>Processing lotto extraction....</div>";
+    const spy = jest
+      .spyOn(view.templates, "extractionInProgressTemplate")
+      .mockReturnValue(step5Template);
+
+    const template = view.getTemplate(step, "data");
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(template).toBe(step5Template);
+  });
+
+  test("getTemplate should return the result of extractionTemplate invocation, if step equals to 6", () => {
+    const step = 6;
+    const step6Template = "<div>Extraction has been completed</div>";
+    const spy = jest
+      .spyOn(view.templates, "extractionTemplate")
+      .mockReturnValue(step6Template);
+
+    const template = view.getTemplate(step, "data");
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith("data");
+    expect(template).toBe(step6Template);
+  });
+
   test("getTemplate should return the result of errorTemplate invocation, if step is not in the range 1-4", () => {
     const step = null;
     const errorTemplate = "<div>Error Template</div>";
