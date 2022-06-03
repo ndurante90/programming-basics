@@ -1,5 +1,7 @@
 import { cities } from "./wheel.js";
 import { getNumbers } from "../utils.js";
+import { Winning } from "./winnings.js";
+import { Ticket } from "./ticket.js";
 
 /**
  * A class that describes an extraction on a single wheel
@@ -13,20 +15,32 @@ export class WheelExtraction {
     this.numbers = [];
   }
 
+  /**
+   * Function that check if a ticket is a winner ticket for the current
+   * WheelExtraction
+   * @param {Ticket} ticket
+   * @returns {boolean} - a boolean that represent if a ticket is winner or not
+   */
   isWinnerTicket(ticket) {
-    let wheel = ticket.wheel.city;
-    let ticketNumbers = ticket.numbers;
-    let numbersToBeChecked = ticket.bet.getNumbersToChecked();
-    let counter = 0;
+    //Check if the parameter is not null and is a valid instance of Ticket class
+    if (ticket && ticket instanceof Ticket) {
+      const ticketWheelCity = ticket.getWheel().getCity();
+      const ticketNumbers = ticket.getNumbers();
+      const totalOfNumbersToBeChecked = ticket.getBet().getNumbersToChecked();
 
-    if (wheel === "Tutte" || this.wheel === wheel) {
-      for (let number of ticketNumbers) {
-        if (this.numbers.includes(number)) {
-          counter++;
-        }
+      let counter = 0;
 
-        if (counter === numbersToBeChecked) {
-          return true;
+      //Check that ticket wheel has value "Tutte" or equals to current wheelExtraction wheel
+      //If not the ticket is a "loser ticket" for sure and returns false
+      if (ticketWheelCity === "Tutte" || ticketWheelCity === this.wheel) {
+        for (let number of ticketNumbers) {
+          if (this.numbers.includes(number)) {
+            counter++;
+          }
+
+          if (counter === totalOfNumbersToBeChecked) {
+            return true;
+          }
         }
       }
     }
@@ -69,6 +83,19 @@ export class Extraction {
       }
 
       this.extractionsOnWheels = [...this.extractionsOnWheels, wheelExtraction];
+    });
+  }
+
+  /**
+   * Calculate and push winnings for a particular ticket
+   * @param {Ticket} ticket
+   */
+  calculateWinnings(ticket) {
+    this.extractionsOnWheels.forEach((wheelExtraction) => {
+      if (wheelExtraction.isWinnerTicket(ticket)) {
+        let winning = new Winning(wheelExtraction.wheel);
+        ticket.winnings.push(winning);
+      }
     });
   }
 }

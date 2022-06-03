@@ -28,7 +28,9 @@ describe("lotto tests", () => {
     updateUI = jest.spyOn(lotto, "updateUI");
   });
 
-  test("loadGame() should be init variables and call updateUI method passing setTicketsNumber function", () => {
+  afterEach(jest.clearAllMocks);
+
+  test("loadGame should be init variables and call updateUI method passing setTicketsNumber function", () => {
     const setTicketsSpy = jest.spyOn(lotto, "setTicketsNumber");
 
     lotto.loadGame();
@@ -49,21 +51,6 @@ describe("lotto tests", () => {
     expect(renderErrorsSpy).toHaveBeenCalledWith(error);
   });
 
-  test("createFakeExtraction should execute extraction.generateExtractionsOnWheels() and updatesUI", () => {
-    let spy = jest.spyOn(lotto, "updateUI");
-    let generateExtractionsOnWheel = jest.spyOn(
-      Extraction.prototype,
-      "generateExtractionsOnWheels"
-    );
-
-    lotto.currentStep = 4;
-    lotto.createFakeExtraction();
-
-    expect(lotto.currentStep).toBe(6);
-    expect(spy).toHaveBeenCalledTimes(2);
-    expect(generateExtractionsOnWheel).toHaveBeenCalled();
-  });
-
   describe("UpdateUI", () => {
     test("should call renderView with currentStep and data parameters and, if execAction is true and action is a valid function , executes the action", () => {
       const mockFunction = jest.fn(() => {
@@ -75,20 +62,6 @@ describe("lotto tests", () => {
 
       expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, data);
       expect(mockFunction).toHaveBeenCalled();
-    });
-
-    test("should call renderView with currentStep and data parameters and, if execAction is true and action is null , call assignActionToButton", () => {
-      let mockFunction = null;
-      let data = null;
-
-      lotto.updateUI(mockFunction, null, true);
-
-      expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, data);
-
-      expect(assignActionToButton).toHaveBeenCalledWith(
-        "action-btn",
-        mockFunction
-      );
     });
 
     test("should call renderView with currentStep and data parameters and, if execAction is false , call assignActionToButton", () => {
@@ -272,5 +245,23 @@ describe("lotto tests", () => {
       expect(lotto.tickets[0].numbers).toHaveLength(3);
       expect(lotto.tickets[1].numbers).toHaveLength(10);
     });
+  });
+
+  jest.useFakeTimers();
+
+  test("createFakeExtraction should execute extraction.generateExtractionsOnWheels() and updateUI", () => {
+    let generateExtractionsOnWheel = jest.spyOn(
+      Extraction.prototype,
+      "generateExtractionsOnWheels"
+    );
+
+    lotto.currentStep = 4;
+    lotto.createFakeExtraction();
+
+    jest.runAllTimers();
+
+    expect(lotto.currentStep).toBe(6);
+    // expect(updateUI).toHaveBeenCalledTimes(2);
+    expect(generateExtractionsOnWheel).toHaveBeenCalled();
   });
 });

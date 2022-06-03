@@ -155,14 +155,13 @@ export class Templates {
     return "<div>Processing lotto extraction....</div>";
   }
 
-  extractionTemplate(data) {
-    let extractionsOnWheels = data.extractionsOnWheels;
-    let winnerTickets = data.winnerTickets;
-    let content = "";
+  extractionTemplate(tickets, extraction) {
+    let extractionsHtml = "";
     let ticketsHtml = "";
 
-    winnerTickets.forEach((ticket, index) => {
-      ticketsHtml += `
+    tickets.forEach((ticket, index) => {
+      if (ticket.winnings.length > 0) {
+        ticketsHtml += `
         <div style="margin-right: 10px; border: 4px solid black; border-style: dashed">
            <div class='header' style='padding-top: 10px;padding-bottom: 10px;border-bottom: 2px solid black; border-bottom-style: dashed'>
               ${printSpaces(32)} Ticket-${index + 1} ${printSpaces(32)}
@@ -175,22 +174,18 @@ export class Templates {
               &nbsp;<strong>Bet: </strong> ${ticket.bet.type}
            </div>
       </div>`;
+      }
     });
 
-    extractionsOnWheels.forEach((extraction) => {
-      let numbers = extraction.numbers.join(" ");
-      content += `<div class="extraction">
-          ${extraction.wheel.toUpperCase()}&nbsp;&nbsp;&nbsp;&nbsp;${numbers}
-        </div>`;
-    });
+    extractionsHtml = this.extractionsOnWheelsTemplate(extraction);
 
     return `<div class="lotto-extraction-phase">
                <div class="extraction-date">
-                  Estrazione del ${data.extractionDate}
+                  Estrazione del ${extraction.extractionDate}
                </div>
                <br>
                <div class="extractionsOnWheels">
-                  ${content}
+                  ${extractionsHtml}
                </div>
             </div>
             <br>
@@ -199,5 +194,19 @@ export class Templates {
                ${ticketsHtml}
             </div>
           `;
+  }
+
+  extractionsOnWheelsTemplate(extraction) {
+    let extractionsHtml = "";
+    const extractionsOnWheels = extraction.extractionsOnWheels;
+    extractionsOnWheels.forEach((extraction) => {
+      let numbers = extraction.numbers.join(" ");
+      extractionsHtml += `
+         <div class="extraction">
+             ${extraction.wheel.toUpperCase()}${printSpaces(10)}${numbers}
+         </div>`;
+    });
+
+    return extractionsHtml;
   }
 }

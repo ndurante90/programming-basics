@@ -19,6 +19,10 @@ export class Wheel {
     this.city = city;
   }
 
+  getCity() {
+    return this.city;
+  }
+
   /**
    * Validate wheel checking if city is valid
    * @param {any} wheelCity

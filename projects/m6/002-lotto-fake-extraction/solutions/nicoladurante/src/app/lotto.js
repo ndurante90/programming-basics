@@ -1,169 +1,184 @@
 import { View } from "./view.js";
-import { getFieldsValues, getNumbers } from "./utils.js";
+import { getFieldsValues, generateNumbers } from "./utils.js";
 import { Ticket } from "./model/ticket.js";
 import { Extraction } from "./model/extraction.js";
 
 document.addEventListener("DOMContentLoaded", start);
 
 export class Lotto {
-  view;
   ticketsNumber;
   currentStep;
   tickets;
+  errors;
+  extraction;
+  view;
 
   constructor() {
+    this.ticketsNumber = 0;
+    this.currentStep = 1;
+    this.tickets = [];
+    this.errors = null;
+    this.extraction = null;
     this.view = new View();
   }
 
   /**
-   * Init variables and display the first step
+   * Display the first step
    * of the game
    */
   loadGame() {
-    this.ticketsNumber = 0;
-    this.currentStep = 1;
-    this.tickets = [];
     this.updateUI(this.setTicketsNumber);
   }
 
   /**
-   * Update the UI by rendering new template
-   * and handle the next action.
+   * Update the UI by rendering a new template if no errors have been detected
+   * otherwise display a list of errors at the top of template.
    * If execAction is true executes the action immediately after template rendering
    * otherwise assign action to "Next Step" button.
    * @param {function} action
-   * @param {data} data
    * @param {boolean} execAction
+   * @param {any} data
    */
-  updateUI(action, data = null, execAction = false) {
+  updateUI(action, execAction = false, ...data) {
+    //If there are errors, call view.renderErrors to display them
+    if (this.errors) {
+      this.view.renderErrors(this.errors);
+      return;
+    }
+
     this.view.renderView(this.currentStep, data);
 
-    //handle action
-    if (execAction && action) {
-      action();
-    } else {
+    /*After new UI rendering, assign a new action to the button
+    or executes immediately*/
+    if (!execAction) {
       this.view.assignActionToButton("action-btn", action);
+    } else {
+      if (action) action();
     }
   }
 
   /**
-   * Render errors on the view
-   * @param {any} errors
-   */
-  handleErrors(errors) {
-    this.view.renderErrors(errors);
-  }
-
-  /**
-   * Read number from input value and check if is a valid number
-   * If the number is not valid call handleErrors, otherwise updates UI
-   * to handle the next step
+   * Read a value from input field and check if it is a valid number
+   * Updates UI
    */
   setTicketsNumber = () => {
-    let number = Number(document.getElementById("ticketsNumber").value);
-    let error;
+    let value = Number(document.getElementById("ticketsNumber").value);
 
-    if (isNaN(number) || !Number.isInteger(number)) {
-      error = new Error("The value must be an integer number");
+    /*If the value is not a number or is not an integer, creates a new Error object
+      and assign it to error variable
+    */
+    if (isNaN(value) || !Number.isInteger(value)) {
+      this.errors = new Error("The value must be an integer number");
     }
 
-    if (Number.isInteger(number)) {
-      if (number < 1 || number > 5) {
-        error = new Error("Number must be in the range 1 - 5");
+    /*If the value is an integer between 1 to 5 assign it to ticketsNumber variable
+      and increment currentStep variable, otherwise creates a new Error object
+      and assign it to error variable */
+    if (Number.isInteger(value)) {
+      if (value < 1 || value > 5) {
+        this.errors = new Error("Number must be in the range 1 - 5");
       } else {
-        this.ticketsNumber = number;
+        this.errors = null;
+        this.ticketsNumber = value;
         this.currentStep++;
       }
     }
 
-    if (error) {
-      this.handleErrors(error);
-    } else {
-      this.updateUI(this.askBetTypeAndAmount, this.ticketsNumber);
-    }
+    //Refresh UI
+    this.updateUI(this.askBetTypeAndAmount, false, this.ticketsNumber);
   };
 
   /**
-   * Read field values from DOM and try to construct a ticket.
-   * If one or more ticket construction fails due to some validation errors,
-   * call handleErrors otherwise updatesUI to handle next step
+   * Call getTickets function for a number of times equals to ticketsNumber variable
+   * At the end of operation if no errors have been detected, increment application step by 1
+   * and updates with new template, otherwise display errors in the current template
    */
   askBetTypeAndAmount = () => {
-    let errors = [];
-    this.tickets = [];
-    for (let index = 1; index <= this.ticketsNumber; index++) {
-      let [amount, betValue, wheel] = getFieldsValues([
-        `#bill-${index}-amount`,
-        `#bill-${index}-type`,
-        `#wheel-${index}`,
-      ]);
+    this.errors = null;
 
-      try {
-        let ticket = Ticket.constructTicket(amount, betValue, wheel);
-        this.tickets.push(ticket);
-      } catch (err) {
-        errors = [...errors, err];
-      }
-    }
+    //create an array of [0, 1, ...this.ticketsNumbers] keys
+    let array = Array.from(Array(this.ticketsNumber).keys());
 
-    if (errors.length == 0) {
+    this.tickets = array.reduce((acc, i) => this.getTickets(acc, i), []);
+
+    //If no errors increment the application step
+    if (!this.errors) {
       this.currentStep++;
-      this.updateUI(this.generateNumbers, null, true);
-    } else {
-      this.handleErrors(errors);
     }
+    //Refresh the UI
+    this.updateUI(this.generateTicketsNumbers, true, null);
   };
 
   /**
-   * Generate numbers foreach tickets.
-   * UpdateUI after 3000 milliseconds
+   * Generate numbers for each ticket, increment step
+   * and updates UI after 3 seconds.
    */
-  generateNumbers = () => {
-    this.tickets.forEach((ticket) => {
-      let range = getNumbers(1, 90);
-
-      for (let i = 1; i <= ticket.amountOfNumbers; i++) {
-        let index = Math.floor(Math.random() * range.length);
-        ticket.addNumber(range[index]);
-        range.splice(index, 1);
-      }
-    });
+  generateTicketsNumbers = () => {
+    this.tickets.forEach(generateNumbers);
 
     this.currentStep++;
 
-    //async
     setTimeout(() => {
-      this.updateUI(null, this.tickets, true);
-      this.view.assignActionToButton("action-btn", this.createFakeExtraction);
+      this.updateUI(this.createFakeExtraction, false, this.tickets);
     }, 3000);
   };
 
-  checkWinnerTickets = (extraction) => {
-    this.tickets.forEach((ticket) => {
-      for (let wheelExtraction of extraction.extractionsOnWheels) {
-        if (wheelExtraction.isWinnerTicket(ticket)) {
-          ticket.winner = true;
-          break;
-        }
-      }
-    });
-  };
-
   /**
-   * Handle extraction phase.
-   *
+   * Create a new extraction, increment step and updates UI.
+   * After 3 seconds call printWinnerTickets to display the winner tickets
    */
   createFakeExtraction = () => {
-    let extraction = new Extraction();
+    this.extraction = new Extraction();
     this.currentStep++;
-    this.updateUI(() => extraction.generateExtractionsOnWheels(), null, true);
-    setTimeout(() => {
-      this.checkWinnerTickets(extraction);
-      extraction.winnerTickets = this.tickets.filter((ticket) => ticket.winner);
-      this.currentStep++;
-      this.updateUI(null, extraction);
-    }, 3000);
+
+    this.updateUI(
+      () => this.extraction.generateExtractionsOnWheels(),
+      true,
+      null
+    );
+
+    setTimeout(this.printWinnerTickets, 3000);
   };
+
+  /**
+   * Calculate winnings for each ticket, increment step
+   * and updates UI
+   */
+  printWinnerTickets = () => {
+    this.tickets.forEach((ticket) => this.extraction.calculateWinnings(ticket));
+    this.currentStep++;
+    this.updateUI(null, false, this.tickets, this.extraction);
+  };
+
+  /**
+   * Function that read values from DOM fields and tries to
+   * create a new Ticket: if ticket creation is successful
+   * push new element in tickets array and returns the updated
+   * array, otherwise append a new error on Errors array
+   * and clear tickets array
+   * @param {Array<Ticket>} tickets
+   * @param {number} ticketIndex
+   * @returns {Array<Ticket>} tickets
+   */
+  getTickets(tickets, ticketIndex) {
+    //Call getFieldsValues to read values from DOM input field
+    let [amount, betValue, wheel] = getFieldsValues([
+      `#bill-${ticketIndex + 1}-amount`,
+      `#bill-${ticketIndex + 1}-type`,
+      `#wheel-${ticketIndex + 1}`,
+    ]);
+
+    try {
+      const ticket = Ticket.constructTicket(amount, betValue, wheel);
+      tickets = [...tickets, ticket];
+    } catch (err) {
+      tickets = [];
+      this.errors = this.errors ?? [];
+      this.errors = [...this.errors, err];
+    }
+
+    return tickets;
+  }
 }
 
 function start() {

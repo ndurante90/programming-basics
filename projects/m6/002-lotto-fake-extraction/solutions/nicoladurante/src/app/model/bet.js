@@ -7,6 +7,11 @@ export class Bet {
     this.type = type;
   }
 
+  /**
+   * Return the numbers of values to be checked
+   * to determine if a specific bet is a winning or not.
+   * @returns {number} - number of values to be checked
+   */
   getNumbersToChecked() {
     return possibleValues.indexOf(this.type) + 1;
   }

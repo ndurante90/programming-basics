@@ -70,7 +70,7 @@ export class View {
         break;
 
       case 4:
-        template = this.templates.ticketsTemplate(data);
+        template = this.templates.ticketsTemplate(...data);
         break;
 
       case 5:
@@ -78,7 +78,7 @@ export class View {
         break;
 
       case 6:
-        template = this.templates.extractionTemplate(data);
+        template = this.templates.extractionTemplate(...data);
         break;
 
       default:
