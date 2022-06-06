@@ -8,6 +8,15 @@ export class Bet {
   }
 
   /**
+   * Return the numbers of values to be checked
+   * to determine if a specific bet is a winning or not.
+   * @returns {number} - number of values to be checked
+   */
+  getNumbersToChecked() {
+    return possibleValues.indexOf(this.type) + 1;
+  }
+
+  /**
    * Validate bet checking the type
    * @param {any} betType
    * @returns {Array<string>} - an array of validation errors

@@ -1,4 +1,6 @@
 import { View } from "../app/view";
+import { Ticket } from "../app/model/ticket";
+import { Extraction } from "../app/model/extraction";
 
 describe("View class", () => {
   let view;
@@ -23,14 +25,14 @@ describe("View class", () => {
   });
 
   test("renderErrors should call getTemplate method and prepend the result on templateWrapper", () => {
-    const error = new Error("Error");
+    const errors = [new Error("Error")];
     const getTemplate = jest
       .spyOn(view, "getTemplate")
       .mockReturnValue("<div id='errors'><div>Error</div></div>");
 
-    view.renderErrors(error);
+    view.renderErrors(errors);
 
-    expect(getTemplate).toHaveBeenCalledWith(null, [error]);
+    expect(getTemplate).toHaveBeenCalledWith(null, errors);
   });
 
   test("assignActionToButton should append action to a specific button", () => {
@@ -68,7 +70,7 @@ describe("View class", () => {
       .spyOn(view.templates, "askBetTypeAndAmountTemplate")
       .mockReturnValue(step2Template);
 
-    const template = view.getTemplate(step, null);
+    const template = view.getTemplate(step, [2]);
 
     expect(spy).toHaveBeenCalledTimes(1);
     expect(template).toBe(step2Template);
@@ -87,18 +89,52 @@ describe("View class", () => {
     expect(template).toBe(step3Template);
   });
 
-  test("getTemplate should return the result of ticketsTemplate invocation, if step equals to 4", () => {
+  test("getTemplate should return the result of generatedTicketsTemplate invocation, if step equals to 4", () => {
     const step = 4;
     const step4Template = "<div>Tickets Template</div>";
     const spy = jest
-      .spyOn(view.templates, "ticketsTemplate")
+      .spyOn(view.templates, "generatedTicketsTemplate")
       .mockReturnValue(step4Template);
+
+    const tickets = [
+      new Ticket(2, "ambata", "venezia"),
+      new Ticket(3, "ambo", "tutte"),
+    ];
+
+    const template = view.getTemplate(step, tickets);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(tickets[0], tickets[1]);
+    expect(template).toBe(step4Template);
+  });
+
+  test("getTemplate should return the result of extractionInProgressTemplate invocation, if step equals to 5", () => {
+    const step = 5;
+    const step5Template = "<div>Processing lotto extraction....</div>";
+    const spy = jest
+      .spyOn(view.templates, "extractionInProgressTemplate")
+      .mockReturnValue(step5Template);
 
     const template = view.getTemplate(step, "data");
 
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith("data");
-    expect(template).toBe(step4Template);
+    expect(template).toBe(step5Template);
+  });
+
+  test("getTemplate should return the result of extractionTemplate invocation, if step equals to 6", () => {
+    const step = 6;
+    const step6Template = "<div>Extraction has been completed</div>";
+    const spy = jest
+      .spyOn(view.templates, "extractionTemplate")
+      .mockReturnValue(step6Template);
+
+    const tickets = [new Ticket(1, "ambo", "tutte")];
+    const values = [tickets, new Extraction()];
+    const template = view.getTemplate(step, values);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledWith(values[0], values[1]);
+    expect(template).toBe(step6Template);
   });
 
   test("getTemplate should return the result of errorTemplate invocation, if step is not in the range 1-4", () => {
@@ -108,10 +144,12 @@ describe("View class", () => {
       .spyOn(view.templates, "errorTemplate")
       .mockReturnValue(errorTemplate);
 
-    const template = view.getTemplate(step, "data");
+    const errors = [new Error("data")];
+
+    const template = view.getTemplate(step, errors);
 
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith("data");
+    expect(spy).toHaveBeenCalledWith(errors);
     expect(template).toBe(errorTemplate);
   });
 });

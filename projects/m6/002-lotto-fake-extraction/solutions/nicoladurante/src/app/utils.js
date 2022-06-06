@@ -37,6 +37,21 @@ export const getNumbers = (minValue, maxValue) => {
 };
 
 /**
+ * Generate a ticket.amountOfNumbers-length sequence of unique numbers
+ * between 1 to 90. The sequence is store in Ticket.numbers field
+ * @param {Ticket} ticket
+ */
+export const generateNumbers = (ticket) => {
+  let range = getNumbers(1, 90);
+
+  for (let i = 1; i <= ticket.amountOfNumbers; i++) {
+    let index = Math.floor(Math.random() * range.length);
+    ticket.addNumber(range[index]);
+    range.splice(index, 1);
+  }
+};
+
+/**
  * Return a string of &nbsp; spaces
  * @param {number} num
  * @returns {string} - a string of &nbsp; entities

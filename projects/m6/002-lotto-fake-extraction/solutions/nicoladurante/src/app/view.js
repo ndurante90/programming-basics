@@ -15,9 +15,9 @@ export class View {
    * @param {any} errors
    */
   renderErrors(errors) {
-    if (!Array.isArray(errors)) {
+    /*if (!Array.isArray(errors)) {
       errors = [errors];
-    }
+    }*/
     this.templateWrapper.prepend(this.getTemplate(null, errors));
   }
 
@@ -62,14 +62,25 @@ export class View {
       case 1:
         template = this.templates.setTicketsNumberTemplate();
         break;
+
       case 2:
-        template = this.templates.askBetTypeAndAmountTemplate(data);
+        template = this.templates.askBetTypeAndAmountTemplate(...data);
         break;
+
       case 3:
         template = this.templates.generatingTicketTemplate();
         break;
+
       case 4:
-        template = this.templates.ticketsTemplate(data);
+        template = this.templates.generatedTicketsTemplate(...data);
+        break;
+
+      case 5:
+        template = this.templates.extractionInProgressTemplate();
+        break;
+
+      case 6:
+        template = this.templates.extractionTemplate(...data);
         break;
 
       default:
