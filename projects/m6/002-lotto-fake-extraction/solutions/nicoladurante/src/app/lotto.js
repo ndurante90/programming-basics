@@ -68,7 +68,7 @@ export class Lotto {
       and assign it to error variable
     */
     if (isNaN(value) || !Number.isInteger(value)) {
-      this.errors = new Error("The value must be an integer number");
+      this.errors = [new Error("The value must be an integer number")];
     }
 
     /*If the value is an integer between 1 to 5 assign it to ticketsNumber variable
@@ -76,7 +76,7 @@ export class Lotto {
       and assign it to error variable */
     if (Number.isInteger(value)) {
       if (value < 1 || value > 5) {
-        this.errors = new Error("Number must be in the range 1 - 5");
+        this.errors = [new Error("Number must be in the range 1 - 5")];
       } else {
         this.errors = null;
         this.ticketsNumber = value;
@@ -131,11 +131,7 @@ export class Lotto {
     this.extraction = new Extraction();
     this.currentStep++;
 
-    this.updateUI(
-      () => this.extraction.generateExtractionsOnWheels(),
-      true,
-      null
-    );
+    this.updateUI(this.extraction.generateExtractionsOnWheels, true, null);
 
     setTimeout(this.printWinnerTickets, 3000);
   };
@@ -146,8 +142,11 @@ export class Lotto {
    */
   printWinnerTickets = () => {
     this.tickets.forEach((ticket) => this.extraction.calculateWinnings(ticket));
+    let winnerTickets = this.tickets.filter(
+      (ticket) => ticket.winnings.length > 0
+    );
     this.currentStep++;
-    this.updateUI(null, false, this.tickets, this.extraction);
+    this.updateUI(null, false, winnerTickets, this.extraction);
   };
 
   /**

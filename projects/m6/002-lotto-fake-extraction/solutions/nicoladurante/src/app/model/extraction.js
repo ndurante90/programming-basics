@@ -67,7 +67,7 @@ export class Extraction {
    * Generate a combination of 5 numbers from 1 to 90 for each wheel
    * and fill extractionsOnWheels array
    */
-  generateExtractionsOnWheels() {
+  generateExtractionsOnWheels = () => {
     let wheels = cities.filter((value) => value !== "Tutte");
 
     wheels.forEach((city) => {
@@ -84,7 +84,7 @@ export class Extraction {
 
       this.extractionsOnWheels = [...this.extractionsOnWheels, wheelExtraction];
     });
-  }
+  };
 
   /**
    * Calculate and push winnings for a particular ticket

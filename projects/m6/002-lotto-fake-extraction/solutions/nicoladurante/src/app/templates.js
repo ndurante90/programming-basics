@@ -36,27 +36,6 @@ export class Templates {
   }
 
   /**
-   * Return a template representing a html button
-   * @returns {HtmlElement} btnElement
-   */
-
-  buttonTemplate() {
-    return `<button id="action-btn" type="button">Next step</button>`;
-  }
-
-  /**
-   * Render options for html select type
-   * @returns {string} options
-   */
-  renderSelectOptions() {
-    let options = "";
-    cities.forEach((city) => {
-      options += `<option value="${city}">${city}</option>`;
-    });
-    return options;
-  }
-
-  /**
    * Returns template for first step
    * @returns {string} - template for first step
    */
@@ -74,13 +53,13 @@ export class Templates {
 
   /**
    * Returns template for second step
-   * @param {number} numberOfBills
+   * @param {number} numberOfTickets
    * @returns {string} - template for second step
    */
-  askBetTypeAndAmountTemplate(numberOfBills) {
-    let template = "<form>";
+  askBetTypeAndAmountTemplate(numberOfTickets) {
+    let template = "";
 
-    for (let i = 1; i <= numberOfBills; i++) {
+    for (let i = 1; i <= numberOfTickets; i++) {
       template += `
          <h2>Bill ${i}</h2>
            <div>
@@ -107,66 +86,79 @@ export class Templates {
   }
 
   /**
-   * Template for generation phase
-   * @returns {string} - template for generation ticket
+   * Returns template for generation phase
+   * @returns {string} - template for tickets generation phase
    */
   generatingTicketTemplate() {
     return "<div>Generating tickets....</div>";
   }
 
   /**
-   * Returns the final tickets template
-   * @param {any} data
-   * @returns {string} - template for tickets
+   * Returns the template for the generated tickets phase
+   * @param {Array<Ticket>} tickets
+   * @returns {string} - generatedTicketsTemplate
    */
-  ticketsTemplate(data) {
-    let template = '<div class="tickets-container" style="display: flex">';
 
-    data.forEach((bill, index) => {
-      let ticket =
-        "<div class='header' style='padding-top: 10px;padding-bottom: 10px;border-bottom: 2px solid black; border-bottom-style: dashed'>";
-      let number = index + 1;
-      ticket += `${printSpaces(32)} Ticket-${number} ${printSpaces(32)}`;
-      ticket += "</div>";
-      ticket += "<div class='body' style='padding: 10px;'>";
-      ticket += `&nbsp;<strong>Numbers:</strong> ${bill.numbers.join(" ")}`;
-      ticket += "<br>";
-      ticket += `&nbsp;<strong>Wheel:</strong> ${bill.wheel.city}`;
-      ticket += "<br>";
-      ticket += `&nbsp;<strong>Bet: </strong> ${bill.bet.type}`;
-      ticket += "</div>";
-      template +=
-        "<div style='margin-right: 10px; border: 4px solid black; border-style: dashed'>" +
-        ticket +
-        "</div>";
-    });
-
-    template += "</div>";
+  generatedTicketsTemplate(tickets) {
+    let template = "";
+    template += this.ticketsTemplate(tickets);
     template += `<br>${this.buttonTemplate()}`;
-
     return template;
   }
 
   /**
-   * Template for extraction phase
-   * @returns {string} - template for lotto extraction phase
+   * Returns template for extraction in progress phase
+   * @returns {string} - template for extraction in progress phase
    */
   extractionInProgressTemplate() {
     return "<div>Processing lotto extraction....</div>";
   }
 
+  /**
+   *
+   * @param {Array<Ticket>} tickets
+   * @param {Extraction} extraction
+   * @returns {string} - template for extraction phase
+   */
+
   extractionTemplate(tickets, extraction) {
     let extractionsHtml = "";
+    let ticketsHtml = this.ticketsTemplate(tickets);
+
+    extractionsHtml = this.extractionsOnWheelsTemplate(extraction);
+
+    return `
+       <div class="lotto-extraction-phase">
+          <div class="extraction-date">
+             Estrazione del ${extraction.extractionDate}
+          </div>
+          <br>
+          <div class="extractionsOnWheels">
+             ${extractionsHtml}
+          </div>
+        </div>
+        <br>
+        Ticket vincenti:
+           ${ticketsHtml}
+    `;
+  }
+
+  /**
+   * Returns tickets templates
+   * @param {Array<Ticket>} tickets
+   * @returns {string} - template for tickets
+   */
+  ticketsTemplate(tickets) {
+    let template = "";
     let ticketsHtml = "";
 
     tickets.forEach((ticket, index) => {
-      if (ticket.winnings.length > 0) {
-        ticketsHtml += `
-        <div style="margin-right: 10px; border: 4px solid black; border-style: dashed">
-           <div class='header' style='padding-top: 10px;padding-bottom: 10px;border-bottom: 2px solid black; border-bottom-style: dashed'>
+      ticketsHtml += `
+        <div class="ticket">
+           <div class="header">
               ${printSpaces(32)} Ticket-${index + 1} ${printSpaces(32)}
            </div>
-           <div class='body' style='padding: 10px;'>
+           <div class="body">
               &nbsp;<strong>Numbers:</strong> ${ticket.numbers.join(" ")}
               <br>
               &nbsp;<strong>Wheel:</strong> ${ticket.wheel.city}
@@ -174,28 +166,22 @@ export class Templates {
               &nbsp;<strong>Bet: </strong> ${ticket.bet.type}
            </div>
       </div>`;
-      }
     });
 
-    extractionsHtml = this.extractionsOnWheelsTemplate(extraction);
+    template += `
+       <div class="tickets-container">
+          ${ticketsHtml}
+       </div>
+    `;
 
-    return `<div class="lotto-extraction-phase">
-               <div class="extraction-date">
-                  Estrazione del ${extraction.extractionDate}
-               </div>
-               <br>
-               <div class="extractionsOnWheels">
-                  ${extractionsHtml}
-               </div>
-            </div>
-            <br>
-            Ticket vincenti:
-            <div class="winnerTickets" style="display: flex">
-               ${ticketsHtml}
-            </div>
-          `;
+    return template;
   }
 
+  /**
+   * Returns template for WheelExtraction object list
+   * @param {Extraction} extraction
+   * @returns {string} - template that represent list of WheelExtraction objects
+   */
   extractionsOnWheelsTemplate(extraction) {
     let extractionsHtml = "";
     const extractionsOnWheels = extraction.extractionsOnWheels;
@@ -208,5 +194,26 @@ export class Templates {
     });
 
     return extractionsHtml;
+  }
+
+  /**
+   * Return a template representing a html button
+   * @returns {string} button template
+   */
+
+  buttonTemplate() {
+    return `<button id="action-btn" type="button">Next step</button>`;
+  }
+
+  /**
+   * Render options for html select type
+   * @returns {string} options
+   */
+  renderSelectOptions() {
+    let options = "";
+    cities.forEach((city) => {
+      options += `<option value="${city}">${city}</option>`;
+    });
+    return options;
   }
 }

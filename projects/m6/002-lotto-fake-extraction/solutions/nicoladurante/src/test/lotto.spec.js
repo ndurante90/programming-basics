@@ -4,6 +4,7 @@ import { Ticket } from "../app/model/ticket";
 import { Bet } from "../app/model/bet";
 import { Wheel } from "../app/model/wheel";
 import { Extraction } from "../app/model/extraction";
+import Utils from "adm-zip/util/utils";
 
 let lotto, view;
 let updateUI, renderViewSpy, renderErrorsSpy, assignActionToButton;
@@ -30,25 +31,23 @@ describe("lotto tests", () => {
 
   afterEach(jest.clearAllMocks);
 
-  test("loadGame should be init variables and call updateUI method passing setTicketsNumber function", () => {
-    const setTicketsSpy = jest.spyOn(lotto, "setTicketsNumber");
-
-    lotto.loadGame();
-
+  test("constructor should istantiate variables", () => {
     expect(lotto.ticketsNumber).toBe(0);
     expect(lotto.currentStep).toBe(1);
     expect(lotto.tickets).toBeInstanceOf(Array);
     expect(lotto.tickets).toHaveLength(0);
 
-    expect(updateUI).toHaveBeenCalledWith(setTicketsSpy);
+    expect(lotto.errors).toBe(null);
+    expect(lotto.extraction).toBe(null);
+    expect(lotto.view).toBeDefined();
   });
 
-  test("handleErrors should call view.renderErrors with errors parameter", () => {
-    let error = new Error("Custom error!");
+  test("loadGame should call updateUI method passing setTicketsNumber function", () => {
+    const setTicketsSpy = jest.spyOn(lotto, "setTicketsNumber");
 
-    lotto.handleErrors(error);
+    lotto.loadGame();
 
-    expect(renderErrorsSpy).toHaveBeenCalledWith(error);
+    expect(updateUI).toHaveBeenCalledWith(setTicketsSpy);
   });
 
   describe("UpdateUI", () => {
@@ -57,10 +56,10 @@ describe("lotto tests", () => {
         console.log("Action has been executed!");
       });
 
-      let data = null;
-      lotto.updateUI(mockFunction, null, true);
+      const data = "custom data";
+      lotto.updateUI(mockFunction, true, data);
 
-      expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, data);
+      expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, [data]);
       expect(mockFunction).toHaveBeenCalled();
     });
 
@@ -69,27 +68,46 @@ describe("lotto tests", () => {
         console.log("Action assigned to a button!");
       });
 
-      lotto.updateUI(mockFunction);
+      const data = "custom data";
 
-      expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, null);
+      lotto.updateUI(mockFunction, false, data);
+
+      expect(renderViewSpy).toHaveBeenCalledWith(lotto.currentStep, [data]);
 
       expect(assignActionToButton).toHaveBeenCalledWith(
         "action-btn",
         mockFunction
       );
     });
+
+    test("should call renderErrors with lotto.errors parameter, if lotto.errors is not undefined", () => {
+      const mockFunction = jest.fn(() => {
+        console.log("Action has been executed!");
+      });
+
+      const data = "custom data";
+
+      lotto.errors = [];
+
+      lotto.errors.push(new Error("Error!"));
+
+      lotto.updateUI(mockFunction, false, data);
+
+      expect(renderErrorsSpy).toHaveBeenCalledWith(lotto.errors);
+      expect(renderViewSpy).not.toHaveBeenCalled();
+      expect(assignActionToButton).not.toHaveBeenCalled();
+    });
   });
 
   describe("The setTicketsNumber method", () => {
-    let handleErrorsSpy;
-    beforeAll(() => {
-      handleErrorsSpy = jest
-        .spyOn(lotto, "handleErrors")
-        .mockImplementation(() => {});
-    });
     describe("After a click on 'Next Step' button", () => {
+      let askBetTypeAndAmountSpy;
       beforeEach(() => {
-        lotto.loadGame();
+        askBetTypeAndAmountSpy = jest.spyOn(lotto, "askBetTypeAndAmount");
+
+        lotto.currentStep = 1;
+
+        lotto.ticketsNumber = 0;
 
         document.body.innerHTML = `<form>
         <label>How many tickets do you want to generate? (min 1 - max 5)</label>
@@ -98,10 +116,9 @@ describe("lotto tests", () => {
      </form>`;
       });
 
-      test("If the input value is between 1 and 5, should set the ticketsNumber variable, increment the currentStep and call the handleStep method passing askBetTypeAndAmount and ticketsNumber", () => {
+      test("If the input value is between 1 and 5, should set the ticketsNumber variable, increment the currentStep and call updateUI method passing askBetTypeAndAmount, false and ticketsNumber", () => {
         //ARRANGE
         document.getElementById("ticketsNumber").value = 3;
-        const askBetTypeAndAmountSpy = jest.spyOn(lotto, "askBetTypeAndAmount");
 
         //ACT
         lotto.setTicketsNumber();
@@ -111,157 +128,139 @@ describe("lotto tests", () => {
         expect(lotto.currentStep).toBe(2);
         expect(updateUI).toHaveBeenCalledWith(
           askBetTypeAndAmountSpy,
+          false,
           lotto.ticketsNumber
         );
       });
 
-      test("If input value is not a number should not update variables and call the handleErrors method with an error object with message 'The value must be an integer number'", () => {
-        const error = new Error("The value must be an integer number");
-
+      test("If input value is not a number should assign to lotto.errors an error with message 'The value must be an integer number' and call updateUI method passing askBetTypeAndAmount, false and ticketsNumber'", () => {
         document.getElementById("ticketsNumber").value = "not-a-number";
 
         lotto.setTicketsNumber();
 
         expect(lotto.ticketsNumber).toBe(0);
         expect(lotto.currentStep).toBe(1);
-        expect(handleErrorsSpy).toHaveBeenCalledWith(error);
+        expect(lotto.errors).toEqual([
+          new Error("The value must be an integer number"),
+        ]);
+        expect(updateUI).toHaveBeenCalledWith(
+          askBetTypeAndAmountSpy,
+          false,
+          lotto.ticketsNumber
+        );
       });
 
-      test("If input value is a not integer number should not update variables and call the handleErrors method with an error object with message 'The value must be an integer number'", () => {
-        const error = new Error("The value must be an integer number");
-
+      test("If input value is a not integer number should assign to lotto.errors an error with message 'The value must be an integer number' and call updateUI method passing askBetTypeAndAmount, false and ticketsNumber", () => {
         document.getElementById("ticketsNumber").value = 2.56;
 
         lotto.setTicketsNumber();
 
         expect(lotto.ticketsNumber).toBe(0);
         expect(lotto.currentStep).toBe(1);
-        expect(handleErrorsSpy).toHaveBeenCalledWith(error);
+        expect(lotto.errors).toEqual([
+          new Error("The value must be an integer number"),
+        ]);
+        expect(updateUI).toHaveBeenCalledWith(
+          askBetTypeAndAmountSpy,
+          false,
+          lotto.ticketsNumber
+        );
       });
 
-      test("If input value is of integer type and it is not between 1 to 5, should not update variables and call the handleErrors method with an error object with message 'Number must be in the range 1 - 5'", () => {
-        const error = new Error("Number must be in the range 1 - 5");
-
-        //ARRANGE
+      test("If input value is of integer type and it is not between 1 to 5, should assign to lotto.errors an error with message 'Number must be in the range 1 - 5' and call updateUI method passing askBetTypeAndAmount, false and ticketsNumber", () => {
         document.getElementById("ticketsNumber").value = 6;
 
         lotto.setTicketsNumber();
 
         expect(lotto.ticketsNumber).toBe(0);
         expect(lotto.currentStep).toBe(1);
-        expect(handleErrorsSpy).toHaveBeenCalledWith(error);
+        expect(lotto.errors).toEqual([
+          new Error("Number must be in the range 1 - 5"),
+        ]);
+        expect(updateUI).toHaveBeenCalledWith(
+          askBetTypeAndAmountSpy,
+          false,
+          lotto.ticketsNumber
+        );
       });
     });
   });
 
   describe("askBetTypeAndAmount", () => {
-    describe("after a click on 'Next Step' button", () => {
-      describe("assuming ticketsNumber is equal to 1", () => {
-        let constructTicket, handleErrors;
-        let generateNumbers;
-        beforeAll(() => {
-          lotto.ticketsNumber = 1;
+    let getTicketsSpy, generateTicketsNumbersSpy;
 
-          // replace with spy on getFieldsValues
-          document.body.innerHTML = `
-          <form>
-          <h2>Bill 1</h2>
-            <div>
-               <label>Type of bill (ambata - ambo - terno - quaterna - cinquina):</label>
-               <input id="bill-1-type" class="bills-types" type="text">
-            </div>
-            <br>
-            <div>
-               <label>Amount of numbers: </label>
-               <input id="bill-1-amount" class="bills-number-amounts" type="text">
-            </div>
-            <br>
-            <div>
-               <label>Select the wheel: </label>
-               <select id="wheel-1">
-                  <option value="Bari">Bari</option><option value="Cagliari">Cagliari</option><option value="Firenze">Firenze</option><option value="Genova">Genova</option><option value="Milano">Milano</option><option value="Napoli">Napoli</option><option value="Palermo">Palermo</option><option value="Roma">Roma</option><option value="Torino">Torino</option><option value="Venezia">Venezia</option><option value="Tutte">Tutte</option>
-               </select>
-            </div>
-           <br>
-              <button id="action-btn" type="button">Next step</button>
-          </form>`;
-        });
+    beforeEach(function () {
+      getTicketsSpy = jest.spyOn(lotto, "getTickets");
 
-        beforeEach(() => {
-          lotto.tickets = [];
-          lotto.currentStep = 2;
-          constructTicket = jest.fn();
+      generateTicketsNumbersSpy = jest.spyOn(lotto, "generateTicketsNumbers");
 
-          Ticket.constructTicket = constructTicket;
-          handleErrors = jest
-            .spyOn(lotto, "handleErrors")
-            .mockImplementation(() => {});
+      lotto.currentStep = 2;
 
-          generateNumbers = jest.spyOn(lotto, "generateNumbers");
-        });
+      lotto.errors = null;
+    });
 
-        test("if the ticket is valid should call Ticket.constructTicket, push the ticket in tickets array, increment step and call updateUI(generateNumbers, null, true)", () => {
-          constructTicket.mockReturnValue(
-            () => new Ticket(5, new Bet("ambo"), new Wheel("bari"))
-          );
+    test("should call getTickets for a number of times equals to lotto.ticketsNumber, increment currentStep and call updateUI", () => {
+      lotto.ticketsNumber = 5;
 
-          lotto.askBetTypeAndAmount();
+      lotto.askBetTypeAndAmount();
 
-          expect(constructTicket).toHaveBeenCalledTimes(1);
-          expect(lotto.tickets).toHaveLength(1);
-          expect(lotto.tickets[0]).toEqual(constructTicket());
+      expect(getTicketsSpy).toHaveBeenCalledTimes(lotto.ticketsNumber);
+      expect(updateUI).toHaveBeenCalledWith(
+        generateTicketsNumbersSpy,
+        true,
+        null
+      );
+    });
 
-          expect(updateUI).toHaveBeenCalledWith(generateNumbers, null, true);
-        });
+    test("should call getTickets for a number of times equals to lotto.ticketsNumber and get empty tickets array, if there are one or more validation errors", () => {
+      lotto.ticketsNumber = 5;
+      lotto.errors = [new Error("Error!")];
 
-        test("if the ticket is not valid should call Ticket.constructTicket, clear tickets array, concatenate errors in errors array and call handleErrors method", () => {
-          let error = new Error("Custom error");
-          constructTicket.mockImplementation(() => {
-            throw error;
-          });
+      lotto.askBetTypeAndAmount();
 
-          lotto.askBetTypeAndAmount();
-
-          expect(constructTicket).toHaveBeenCalledTimes(1);
-          expect(lotto.tickets).toHaveLength(0);
-          expect(handleErrors).toHaveBeenCalledWith([error]);
-          expect(lotto.currentStep).toBe(2);
-        });
-      });
+      expect(getTicketsSpy).toHaveBeenCalledTimes(lotto.ticketsNumber);
+      expect(lotto.tickets).toEqual([]);
+      expect(updateUI).toHaveBeenCalledWith(
+        generateTicketsNumbersSpy,
+        true,
+        null
+      );
     });
   });
 
-  describe("generateNumbers", () => {
-    beforeEach(() => {
-      const generateNumbers = jest.spyOn(lotto, "generateNumbers");
-    });
-    test("assuming the length of lotto.tickets is equal to 2, should generate ticket.numbers random arrays with length equal to Ticket.amountOfNumbers", () => {
-      lotto.tickets = [];
-      lotto.tickets.push(new Ticket(3, "ambo", "Venezia"));
-      lotto.tickets.push(new Ticket(10, "cinquina", "Tutte"));
-
-      lotto.generateNumbers();
-
-      expect(lotto.tickets[0].numbers).toHaveLength(3);
-      expect(lotto.tickets[1].numbers).toHaveLength(10);
-    });
-  });
-
-  jest.useFakeTimers();
-
-  test("createFakeExtraction should execute extraction.generateExtractionsOnWheels() and updateUI", () => {
-    let generateExtractionsOnWheel = jest.spyOn(
-      Extraction.prototype,
-      "generateExtractionsOnWheels"
+  test("generateTicketsNumbers should call generateNumbers for a number of times equals to tickets array length, increment step and call updateUI", () => {
+    jest.useFakeTimers();
+    const createFakeExtractionSpy = jest.spyOn(lotto, "createFakeExtraction");
+    lotto.tickets.push(
+      new Ticket(2, "ambo", "tutte"),
+      new Ticket(3, "terno", "venezia")
     );
 
-    lotto.currentStep = 4;
-    lotto.createFakeExtraction();
+    lotto.currentStep = 3;
+
+    lotto.generateTicketsNumbers();
 
     jest.runAllTimers();
 
-    expect(lotto.currentStep).toBe(6);
-    // expect(updateUI).toHaveBeenCalledTimes(2);
-    expect(generateExtractionsOnWheel).toHaveBeenCalled();
+    expect(lotto.currentStep).toBe(4);
+    expect(updateUI).toHaveBeenCalledWith(
+      createFakeExtractionSpy,
+      false,
+      lotto.tickets
+    );
+  });
+
+  test("createFakeExtraction should istantiate a new Extraction object, increment step and call updateUI. After 3 seconds should call printWinnerTickets", () => {
+    jest.useFakeTimers();
+
+    const printWinnerTicketsSpy = jest
+      .spyOn(lotto, "printWinnerTickets")
+      .mockImplementation(() => {});
+    lotto.currentStep = 4;
+    lotto.createFakeExtraction();
+    jest.runAllTimers();
+    expect(lotto.extraction).toBeDefined();
+    expect(lotto.currentStep).toBe(5);
+    expect(printWinnerTicketsSpy).toHaveBeenCalled();
   });
 });
